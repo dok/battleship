@@ -78,7 +78,8 @@
       this.model.get('playerPosition').on('addShip', (function(_this) {
         return function() {
           var count;
-          return count = _this.model.get('playerPosition').get('matrix').length;
+          count = _this.model.get('playerPosition').get('matrix').length;
+          debugger;
         };
       })(this));
       return this.render();

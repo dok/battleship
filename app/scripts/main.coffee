@@ -50,7 +50,8 @@ class AppView extends Backbone.View
 
     @model.get('playerPosition').on 'addShip', =>
       count = @model.get('playerPosition').get('matrix').length
-
+      debugger;
+      # if count > 17
     do @render
 
   render: ->
