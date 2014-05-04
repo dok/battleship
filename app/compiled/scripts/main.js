@@ -27,6 +27,7 @@ Board model controls the matrix
       randomPositions = this.fillEnemyPosition();
       this.set('enemyPosition', new Board('Enemy Position', randomPositions));
       this.set('playerPosition', new Board('You'));
+      this.set('gameOver', false);
     };
 
     App.prototype.fillEnemyPosition = function() {
@@ -40,8 +41,8 @@ Board model controls the matrix
           case 0:
             for (i = _i = 0, _ref = shipLength - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
               position = {
-                x: column,
-                y: row - i
+                column: column,
+                row: row - i
               };
               if (positions[JSON.stringify(position)]) {
                 return false;
@@ -51,8 +52,8 @@ Board model controls the matrix
           case 1:
             for (i = _j = 0, _ref1 = shipLength - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
               position = {
-                x: column + i,
-                y: row
+                column: column + i,
+                row: row
               };
               if (positions[JSON.stringify(position)]) {
                 return false;
@@ -62,8 +63,8 @@ Board model controls the matrix
           case 2:
             for (i = _k = 0, _ref2 = shipLength - 1; 0 <= _ref2 ? _k <= _ref2 : _k >= _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
               position = {
-                x: column,
-                y: row + i
+                column: column,
+                row: row + i
               };
               if (positions[JSON.stringify(position)]) {
                 return false;
@@ -73,8 +74,8 @@ Board model controls the matrix
           case 3:
             for (i = _l = 0, _ref3 = shipLength - 1; 0 <= _ref3 ? _l <= _ref3 : _l >= _ref3; i = 0 <= _ref3 ? ++_l : --_l) {
               position = {
-                x: column - i,
-                y: row
+                column: column - i,
+                row: row
               };
               if (positions[JSON.stringify(position)]) {
                 return false;
@@ -117,8 +118,8 @@ Board model controls the matrix
             case 0:
               for (i = _i = 0, _ref = shipLength - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
                 position = {
-                  x: column,
-                  y: row - i
+                  column: column,
+                  row: row - i
                 };
                 positions[JSON.stringify(position)] = true;
               }
@@ -126,8 +127,8 @@ Board model controls the matrix
             case 1:
               for (i = _j = 0, _ref1 = shipLength - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
                 position = {
-                  x: column + i,
-                  y: row
+                  column: column + i,
+                  row: row
                 };
                 positions[JSON.stringify(position)] = true;
               }
@@ -135,8 +136,8 @@ Board model controls the matrix
             case 2:
               for (i = _k = 0, _ref2 = shipLength - 1; 0 <= _ref2 ? _k <= _ref2 : _k >= _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
                 position = {
-                  x: column,
-                  y: row + i
+                  column: column,
+                  row: row + i
                 };
                 positions[JSON.stringify(position)] = true;
               }
@@ -144,8 +145,8 @@ Board model controls the matrix
             case 3:
               for (i = _l = 0, _ref3 = shipLength - 1; 0 <= _ref3 ? _l <= _ref3 : _l >= _ref3; i = 0 <= _ref3 ? ++_l : --_l) {
                 position = {
-                  x: column - i,
-                  y: row
+                  column: column - i,
+                  row: row
                 };
                 positions[JSON.stringify(position)] = true;
               }
@@ -185,12 +186,17 @@ Board model controls the matrix
       })(this));
       this.model.get('playerGuess').on('attackPlayer', (function(_this) {
         return function() {
-          var $item, column, key, playerMatrix, row;
+          var $item, column, key, player, playerMatrix, row;
           row = Math.floor(Math.random() * 10) + 1;
           column = Math.floor(Math.random() * 10) + 1;
-          playerMatrix = _this.model.get('playerPosition').get('matrix');
-          key = _this.model.get('playerPosition').getKey(column, row);
+          player = _this.model.get('playerPosition');
+          playerMatrix = player.get('matrix');
+          key = _this.model.get('playerPosition').getKey(row, column);
           if (playerMatrix[key]) {
+            player.set('points', player.get('points') + 1);
+            if (player.get('points') === 17) {
+              _this.gameOver();
+            }
             $item = _this.getSquare(_this.enemyGuessView, row, column);
             return $item.addClass('red');
           }
@@ -198,7 +204,12 @@ Board model controls the matrix
       })(this));
       this.model.get('enemyPosition').on('hit', (function(_this) {
         return function() {
-          var $item, column, row;
+          var $item, column, enemy, row;
+          enemy = _this.model.get('enemyPosition');
+          enemy.set('points', enemy.get('points') + 1);
+          if (enemy.get('points') === 17) {
+            _this.gameOver();
+          }
           row = _this.model.get('playerGuess').get('latest')[0];
           column = _this.model.get('playerGuess').get('latest')[1];
           $item = _this.getSquare(_this.playerGuessView, row, column);
@@ -216,6 +227,11 @@ Board model controls the matrix
         };
       })(this));
       return this.render();
+    };
+
+    AppView.prototype.gameOver = function() {
+      debugger;
+      return alert('gameOver');
     };
 
     AppView.prototype.getSquare = function(view, row, column) {
@@ -242,6 +258,7 @@ Board model controls the matrix
       this.set('boardName', name);
       this.set('matches', 0);
       this.set('latest', null);
+      this.set('points', 0);
       if (matrix) {
         return this.set('matrix', matrix);
       } else {
@@ -279,7 +296,7 @@ Board model controls the matrix
     };
 
     Board.prototype.getKey = function(row, column) {
-      return '{"x":' + column + ',"y":' + row + '}';
+      return '{"column":' + column + ',"row":' + row + '}';
     };
 
     return Board;
@@ -311,7 +328,7 @@ Board model controls the matrix
         if (this.model.get('boardName') === 'Enemy') {
           if (this.model.get('setAllPieces')) {
             this.model.attack(rowIndex, columnIndex);
-            return $(e.currentTarget).toggleClass('black');
+            return $(e.currentTarget).addClass('black');
           } else {
             return alert('you need to set all your pieces!');
           }

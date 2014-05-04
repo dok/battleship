@@ -13,6 +13,7 @@ class App extends Backbone.Model
     randomPositions = do @fillEnemyPosition
     @set('enemyPosition', new Board('Enemy Position', randomPositions))
     @set('playerPosition', new Board('You')) #Second board
+    @set('gameOver', false);
 
     return
 
@@ -26,29 +27,29 @@ class App extends Backbone.Model
         when 0 #up
           for i in [0..shipLength-1]
             position = 
-              x: column
-              y: row - i
+              column: column
+              row: row - i
             if positions[JSON.stringify position]
               return false
         when 1 #right
           for i in [0..shipLength-1]
               position = 
-                x: column + i
-                y: row
+                column: column + i
+                row: row
               if positions[JSON.stringify position]
                 return false
         when 2 #down
           for i in [0..shipLength-1]
                 position = 
-                  x: column
-                  y: row + i 
+                  column: column
+                  row: row + i 
                 if positions[JSON.stringify position]
                   return false
         when 3 #left
           for i in [0..shipLength-1]
                 position = 
-                  x: column - i
-                  y: row
+                  column: column - i
+                  row: row
                 if positions[JSON.stringify position]
                   return false
       return true
@@ -81,26 +82,26 @@ class App extends Backbone.Model
           when 0
             for i in [0..shipLength - 1]
               position = 
-                x: column
-                y: row - i
+                column: column
+                row: row - i
               positions[JSON.stringify position] = true
           when 1
             for i in [0..shipLength - 1]
               position = 
-                x: column + i
-                y: row 
+                column: column + i
+                row: row 
               positions[JSON.stringify position] = true
           when 2
             for i in [0..shipLength - 1]
               position = 
-                x: column
-                y: row + i
+                column: column
+                row: row + i
               positions[JSON.stringify position] = true
           when 3
             for i in [0..shipLength - 1]
               position = 
-                x: column - i
-                y: row
+                column: column - i
+                row: row
               positions[JSON.stringify position] = true
         count++
 
@@ -121,25 +122,38 @@ class AppView extends Backbone.View
     @model.get('playerGuess').on 'attackPlayer', =>
       row = Math.floor(Math.random() * 10) + 1
       column = Math.floor(Math.random() * 10) + 1
-      playerMatrix = @model.get('playerPosition').get('matrix')
-      key = @model.get('playerPosition').getKey(column, row)
+      player = @model.get('playerPosition')
+      playerMatrix = player.get('matrix')
+      key = @model.get('playerPosition').getKey(row, column)
       if playerMatrix[key]
+        player.set('points', player.get('points') + 1)
+        if player.get('points') is 17
+          @gameOver()
         $item = @getSquare @enemyGuessView, row, column
         $item.addClass('red')
 
-    @model.get('enemyPosition').on 'hit', =>
+    @model.get('enemyPosition').on 'hit', => # When player scores a point
+      enemy = @model.get('enemyPosition')
+      enemy.set('points', enemy.get('points') + 1)
+      if enemy.get('points') is 17 # If we score all possible points
+        @gameOver()
+
       row = @model.get('playerGuess').get('latest')[0]
       column = @model.get('playerGuess').get('latest')[1]
       $item = @getSquare @playerGuessView, row, column
       $item.addClass('green')
 
-    @model.get('playerPosition').on 'addShip', =>
+    @model.get('playerPosition').on 'addShip', => # When player adds a ship
       count = Object.keys(@model.get('playerPosition').get('matrix')).length
       if count is 17
-        @model.get('playerPosition').set('setAllPieces', true)
+        @model.get('playerPosition').set('setAllPieces', true) # Player and enemy is ready
         @model.get('playerGuess').set('setAllPieces', true)
 
     do @render
+
+  gameOver: ->
+    debugger;
+    alert('gameOver')
 
   getSquare: (view, row, column) ->
     view.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
@@ -156,6 +170,7 @@ class Board extends Backbone.Model
     @set('boardName', name)
     @set('matches', 0)
     @set('latest', null)
+    @set('points', 0)
     if matrix
       @set('matrix', matrix)
     else
@@ -182,7 +197,7 @@ class Board extends Backbone.Model
       @trigger 'hit', @
 
   getKey: (row, column) ->
-    '{"x":' + column + ',"y":' + row + '}'
+    '{"column":' + column + ',"row":' + row + '}'
 
 class BoardView extends Backbone.View
   className: 'boardContainer'
@@ -201,7 +216,7 @@ class BoardView extends Backbone.View
       if(@model.get('boardName') is 'Enemy')
         if @model.get('setAllPieces')
           @model.attack(rowIndex, columnIndex)
-          $(e.currentTarget).toggleClass('black')
+          $(e.currentTarget).addClass('black')
         else
           alert('you need to set all your pieces!')
       else
