@@ -40,7 +40,7 @@ td:active {
 }
 
 .red {
-  background-color: red;
+  background-color: red !important;
 }
 
 .black {

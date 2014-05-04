@@ -66,11 +66,25 @@
           return _this.model.get('enemyPosition').checkForMatch(playerPositions);
         };
       })(this));
+      this.model.get('playerGuess').on('attackPlayer', (function(_this) {
+        return function() {
+          var $item, column, key, playerMatrix, row;
+          row = Math.floor(Math.random() * 10) + 1;
+          column = Math.floor(Math.random() * 10) + 1;
+          playerMatrix = _this.model.get('playerPosition').get('matrix');
+          key = '{"x":' + column + ',"y":' + row + '}';
+          if (playerMatrix[key]) {
+            $item = _this.enemyGuessView.$el.find('table').find("tr:nth-child(" + row + ")").find("td:nth-child(" + column + ")");
+            $item.addClass('red');
+            debugger;
+          }
+        };
+      })(this));
       this.model.get('enemyPosition').on('hit', (function(_this) {
         return function() {
           var $item, column, row;
-          row = _this.model.get('playerGuess').get('latest')[0] + 1;
-          column = _this.model.get('playerGuess').get('latest')[1] + 1;
+          row = _this.model.get('playerGuess').get('latest')[0];
+          column = _this.model.get('playerGuess').get('latest')[1];
           $item = _this.playerGuessView.$el.find('table').find("tr:nth-child(" + row + ")").find("td:nth-child(" + column + ")");
           return $item.addClass('green');
         };
@@ -78,8 +92,7 @@
       this.model.get('playerPosition').on('addShip', (function(_this) {
         return function() {
           var count;
-          count = _this.model.get('playerPosition').get('matrix').length;
-          debugger;
+          return count = Object.keys(_this.model.get('playerPosition').get('matrix')).length;
         };
       })(this));
       return this.render();
@@ -118,7 +131,8 @@
         this.get('matrix')[key] = true;
         this.set('latest', [row, column]);
       }
-      return this.trigger('addPosition', this);
+      this.trigger('addPosition', this);
+      return this.trigger('attackPlayer', this);
     };
 
     Board.prototype.addShip = function(row, column) {
@@ -163,14 +177,14 @@
     BoardView.prototype.events = {
       'click td': function(e) {
         var columnIndex, rowIndex;
-        rowIndex = $(e.currentTarget).parent().index();
-        columnIndex = $(e.currentTarget).index();
+        rowIndex = $(e.currentTarget).parent().index() + 1;
+        columnIndex = $(e.currentTarget).index() + 1;
         if (this.model.get('boardName') === 'Enemy') {
           this.model.attack(rowIndex, columnIndex);
           return $(e.currentTarget).toggleClass('black');
         } else {
           this.model.addShip(rowIndex, columnIndex);
-          return $(e.currentTarget).toggleClass('white');
+          return $(e.currentTarget).addClass('white');
         }
       }
     };

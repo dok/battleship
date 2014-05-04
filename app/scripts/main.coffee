@@ -42,16 +42,25 @@ class AppView extends Backbone.View
       playerPositions = @model.get('playerGuess').get('matrix')
       @model.get('enemyPosition').checkForMatch(playerPositions)
 
+    @model.get('playerGuess').on 'attackPlayer', =>
+      row = Math.floor(Math.random() * 10) + 1
+      column = Math.floor(Math.random() * 10) + 1
+      playerMatrix = @model.get('playerPosition').get('matrix')
+      key = '{"x":' + column + ',"y":' + row + '}'
+      if playerMatrix[key]
+        $item = @enemyGuessView.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
+        $item.addClass('red')
+        debugger;
+
     @model.get('enemyPosition').on 'hit', =>
-      row = @model.get('playerGuess').get('latest')[0] + 1
-      column = @model.get('playerGuess').get('latest')[1] + 1
+      row = @model.get('playerGuess').get('latest')[0]
+      column = @model.get('playerGuess').get('latest')[1]
       $item = @playerGuessView.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
       $item.addClass('green')
 
     @model.get('playerPosition').on 'addShip', =>
-      count = @model.get('playerPosition').get('matrix').length
-      debugger;
-      # if count > 17
+      count = Object.keys(@model.get('playerPosition').get('matrix')).length
+
     do @render
 
   render: ->
@@ -76,12 +85,12 @@ class Board extends Backbone.Model
       @get('matrix')[key] = true
       @set('latest', [row, column])
     @trigger 'addPosition', @
+    @trigger 'attackPlayer', @
 
   addShip: (row, column) ->
     key = '{"x":' + column + ',"y":' + row + '}'
     if not @get('matrix')[key]
       @get('matrix')[key] = true
-      # @set('shipCount', @get('shipCount') + 1)
       @trigger 'addShip', @
 
   checkForMatch: (matrix) ->
@@ -104,14 +113,14 @@ class BoardView extends Backbone.View
 
   events:
     'click td': (e) ->
-      rowIndex = $(e.currentTarget).parent().index()
-      columnIndex = $(e.currentTarget).index()
+      rowIndex = $(e.currentTarget).parent().index() + 1
+      columnIndex = $(e.currentTarget).index() + 1
       if(@model.get('boardName') is 'Enemy')
         @model.attack(rowIndex, columnIndex)
         $(e.currentTarget).toggleClass('black')
       else
         @model.addShip(rowIndex, columnIndex)
-        $(e.currentTarget).toggleClass('white')
+        $(e.currentTarget).addClass('white')
         # debugger;
 
 
