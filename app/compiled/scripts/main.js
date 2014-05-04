@@ -30,18 +30,126 @@ Board model controls the matrix
     };
 
     App.prototype.fillEnemyPosition = function() {
-      var count, position, positions, x, y;
+      var canAdd, column, count, direction, hasSpace, i, position, positions, row, shipLength, ships, _i, _j, _k, _l, _ref, _ref1, _ref2, _ref3;
       count = 0;
+      ships = [2, 3, 3, 4, 5];
       positions = {};
-      while (count < 17) {
-        x = Math.floor(Math.random() * 10) + 1;
-        y = Math.floor(Math.random() * 10) + 1;
-        position = {
-          x: x,
-          y: y
-        };
-        if (!positions[JSON.stringify(position)]) {
-          positions[JSON.stringify(position)] = true;
+      hasSpace = function(shipLength, direction, row, column) {
+        var i, position, _i, _j, _k, _l, _ref, _ref1, _ref2, _ref3;
+        switch (direction) {
+          case 0:
+            for (i = _i = 0, _ref = shipLength - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
+              position = {
+                x: column,
+                y: row - i
+              };
+              if (positions[JSON.stringify(position)]) {
+                return false;
+              }
+            }
+            break;
+          case 1:
+            for (i = _j = 0, _ref1 = shipLength - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+              position = {
+                x: column + i,
+                y: row
+              };
+              if (positions[JSON.stringify(position)]) {
+                return false;
+              }
+            }
+            break;
+          case 2:
+            for (i = _k = 0, _ref2 = shipLength - 1; 0 <= _ref2 ? _k <= _ref2 : _k >= _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+              position = {
+                x: column,
+                y: row + i
+              };
+              if (positions[JSON.stringify(position)]) {
+                return false;
+              }
+            }
+            break;
+          case 3:
+            for (i = _l = 0, _ref3 = shipLength - 1; 0 <= _ref3 ? _l <= _ref3 : _l >= _ref3; i = 0 <= _ref3 ? ++_l : --_l) {
+              position = {
+                x: column - i,
+                y: row
+              };
+              if (positions[JSON.stringify(position)]) {
+                return false;
+              }
+            }
+        }
+        return true;
+      };
+      canAdd = function(shipLength, direction, row, column) {
+        switch (direction) {
+          case 0:
+            if (row - shipLength >= 0 && hasSpace(shipLength, direction, row, column)) {
+              return true;
+            }
+            break;
+          case 1:
+            if (column + shipLength <= 10 && hasSpace(shipLength, direction, row, column)) {
+              return true;
+            }
+            break;
+          case 2:
+            if (row + shipLength <= 10 && hasSpace(shipLength, direction, row, column)) {
+              return true;
+            }
+            break;
+          case 3:
+            if (column - shipLength >= 0 && hasSpace(shipLength, direction, row, column)) {
+              return true;
+            }
+        }
+        return false;
+      };
+      while (count < 5) {
+        shipLength = ships[count];
+        direction = Math.floor(Math.random() * 4);
+        row = Math.floor(Math.random() * 10) + 1;
+        column = Math.floor(Math.random() * 10) + 1;
+        if (canAdd(shipLength, direction, row, column)) {
+          switch (direction) {
+            case 0:
+              for (i = _i = 0, _ref = shipLength - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
+                position = {
+                  x: column,
+                  y: row - i
+                };
+                positions[JSON.stringify(position)] = true;
+              }
+              break;
+            case 1:
+              for (i = _j = 0, _ref1 = shipLength - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+                position = {
+                  x: column + i,
+                  y: row
+                };
+                positions[JSON.stringify(position)] = true;
+              }
+              break;
+            case 2:
+              for (i = _k = 0, _ref2 = shipLength - 1; 0 <= _ref2 ? _k <= _ref2 : _k >= _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+                position = {
+                  x: column,
+                  y: row + i
+                };
+                positions[JSON.stringify(position)] = true;
+              }
+              break;
+            case 3:
+              for (i = _l = 0, _ref3 = shipLength - 1; 0 <= _ref3 ? _l <= _ref3 : _l >= _ref3; i = 0 <= _ref3 ? ++_l : --_l) {
+                position = {
+                  x: column - i,
+                  y: row
+                };
+                positions[JSON.stringify(position)] = true;
+              }
+          }
           count++;
         }
       }

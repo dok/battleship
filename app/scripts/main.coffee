@@ -18,16 +18,92 @@ class App extends Backbone.Model
 
   fillEnemyPosition: ->
     count = 0
+    ships = [2,3,3,4,5]
     positions = {}
-    while count < 17
-      x = Math.floor(Math.random() * 10) + 1
-      y = Math.floor(Math.random() * 10) + 1
-      position =
-        x: x
-        y: y
-      if not positions[JSON.stringify position]
-        positions[JSON.stringify position] = true
+
+    hasSpace = (shipLength, direction, row, column) ->
+      switch(direction)
+        when 0 #up
+          for i in [0..shipLength-1]
+            position = 
+              x: column
+              y: row - i
+            if positions[JSON.stringify position]
+              return false
+        when 1 #right
+          for i in [0..shipLength-1]
+              position = 
+                x: column + i
+                y: row
+              if positions[JSON.stringify position]
+                return false
+        when 2 #down
+          for i in [0..shipLength-1]
+                position = 
+                  x: column
+                  y: row + i 
+                if positions[JSON.stringify position]
+                  return false
+        when 3 #left
+          for i in [0..shipLength-1]
+                position = 
+                  x: column - i
+                  y: row
+                if positions[JSON.stringify position]
+                  return false
+      return true
+
+    #10 x 10 starting with 1
+    #when there is enough space and when the ship doesnt overlap a previous one
+    canAdd = (shipLength, direction, row, column) ->
+      switch(direction)
+        when 0 #up
+          if row - shipLength >= 0 and hasSpace(shipLength, direction, row, column)
+            return true
+        when 1 #right
+          if column + shipLength <= 10 and hasSpace(shipLength, direction, row, column)
+            return true
+        when 2 #down
+          if row + shipLength <= 10 and hasSpace(shipLength, direction, row, column)
+            return true
+        when 3 #left
+          if column - shipLength >= 0 and hasSpace(shipLength, direction, row, column)
+            return true
+      false
+
+    while count < 5
+      shipLength = ships[count]
+      direction = Math.floor(Math.random() * 4)
+      row = Math.floor(Math.random() * 10) + 1
+      column = Math.floor(Math.random() * 10) + 1
+      if canAdd(shipLength, direction, row, column)
+        switch(direction)
+          when 0
+            for i in [0..shipLength - 1]
+              position = 
+                x: column
+                y: row - i
+              positions[JSON.stringify position] = true
+          when 1
+            for i in [0..shipLength - 1]
+              position = 
+                x: column + i
+                y: row 
+              positions[JSON.stringify position] = true
+          when 2
+            for i in [0..shipLength - 1]
+              position = 
+                x: column
+                y: row + i
+              positions[JSON.stringify position] = true
+          when 3
+            for i in [0..shipLength - 1]
+              position = 
+                x: column - i
+                y: row
+              positions[JSON.stringify position] = true
         count++
+
     positions
 
 class AppView extends Backbone.View
