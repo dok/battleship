@@ -189,7 +189,7 @@ Board model controls the matrix
           row = Math.floor(Math.random() * 10) + 1;
           column = Math.floor(Math.random() * 10) + 1;
           playerMatrix = _this.model.get('playerPosition').get('matrix');
-          key = _this.model.get('playerPosition').getKey(x, y);
+          key = _this.model.get('playerPosition').getKey(column, row);
           if (playerMatrix[key]) {
             $item = _this.getSquare(_this.enemyGuessView, row, column);
             return $item.addClass('red');

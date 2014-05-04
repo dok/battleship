@@ -122,7 +122,7 @@ class AppView extends Backbone.View
       row = Math.floor(Math.random() * 10) + 1
       column = Math.floor(Math.random() * 10) + 1
       playerMatrix = @model.get('playerPosition').get('matrix')
-      key = @model.get('playerPosition').getKey(x, y)
+      key = @model.get('playerPosition').getKey(column, row)
       if playerMatrix[key]
         $item = @getSquare @enemyGuessView, row, column
         $item.addClass('red')
