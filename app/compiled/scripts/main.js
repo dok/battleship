@@ -21,16 +21,155 @@ Board model controls the matrix
     }
 
     App.prototype.initialize = function() {
-      var randomPositions;
-      this.set('playerGuess', new Board('Enemy'));
-      this.set('enemyGuess', new Board('Enemy Guess'));
-      randomPositions = this.fillEnemyPosition();
-      this.set('enemyPosition', new Board('Enemy Position', randomPositions));
-      this.set('playerPosition', new Board('You'));
+      this.set('playerGuess', new Board('Enemy', {}));
+      this.set('enemyGuess', new Board('Enemy Guess', {}));
+      this.set('enemyPosition', new Board('Enemy Position'));
+      this.set('playerPosition', new Board('You', {}));
       this.set('gameOver', false);
     };
 
-    App.prototype.fillEnemyPosition = function() {
+    return App;
+
+  })(Backbone.Model);
+
+  AppView = (function(_super) {
+    __extends(AppView, _super);
+
+    function AppView() {
+      return AppView.__super__.constructor.apply(this, arguments);
+    }
+
+    AppView.prototype.className = 'gameContainer';
+
+    AppView.prototype.initialize = function() {
+      this.playerGuessView = new BoardView({
+        model: this.model.get('playerGuess')
+      });
+      this.enemyGuessView = new BoardView({
+        model: this.model.get('playerPosition')
+      });
+      this.model.get('playerGuess').on('addPosition', (function(_this) {
+        return function() {
+          var playerPositions;
+          playerPositions = _this.model.get('playerGuess').get('matrix');
+          return _this.model.get('enemyPosition').checkForMatch(playerPositions);
+        };
+      })(this));
+      this.model.get('playerGuess').on('attackPlayer', (function(_this) {
+        return function() {
+          var $item, column, key, player, playerMatrix, row;
+          row = Math.floor(Math.random() * 10) + 1;
+          column = Math.floor(Math.random() * 10) + 1;
+          player = _this.model.get('playerPosition');
+          playerMatrix = player.get('matrix');
+          key = _this.model.get('playerPosition').getKey(row, column);
+          if (playerMatrix[key]) {
+            player.set('points', player.get('points') + 1);
+            if (player.get('points') === 17) {
+              _this.gameOver();
+            }
+            $item = _this.getSquare(_this.enemyGuessView, row, column);
+            return $item.addClass('red');
+          }
+        };
+      })(this));
+      this.model.get('enemyPosition').on('hit', (function(_this) {
+        return function() {
+          var $item, column, enemy, row;
+          enemy = _this.model.get('enemyPosition');
+          enemy.set('points', enemy.get('points') + 1);
+          if (enemy.get('points') === 17) {
+            _this.gameOver();
+          }
+          row = _this.model.get('playerGuess').get('latest')[0];
+          column = _this.model.get('playerGuess').get('latest')[1];
+          $item = _this.getSquare(_this.playerGuessView, row, column);
+          return $item.addClass('green');
+        };
+      })(this));
+      this.model.get('playerPosition').on('addShip', (function(_this) {
+        return function() {
+          var count;
+          count = Object.keys(_this.model.get('playerPosition').get('matrix')).length;
+          if (count === 17) {
+            _this.model.get('playerPosition').set('setAllPieces', true);
+            return _this.model.get('playerGuess').set('setAllPieces', true);
+          }
+        };
+      })(this));
+      return this.render();
+    };
+
+    AppView.prototype.gameOver = function() {
+      return alert('gameOver');
+    };
+
+    AppView.prototype.getSquare = function(view, row, column) {
+      return view.$el.find('table').find("tr:nth-child(" + row + ")").find("td:nth-child(" + column + ")");
+    };
+
+    AppView.prototype.render = function() {
+      return this.$el.append(this['playerGuessView'].render()).append(this['enemyGuessView'].render()).html();
+    };
+
+    return AppView;
+
+  })(Backbone.View);
+
+  Board = (function(_super) {
+    __extends(Board, _super);
+
+    function Board() {
+      return Board.__super__.constructor.apply(this, arguments);
+    }
+
+    Board.prototype.initialize = function(name, matrix) {
+      this.set('setAllPieces', false);
+      this.set('boardName', name);
+      this.set('matches', 0);
+      this.set('latest', null);
+      this.set('points', 0);
+      if (!matrix) {
+        return this.set('matrix', this.fillEnemyPosition());
+      } else {
+        return this.set('matrix', matrix);
+      }
+    };
+
+    Board.prototype.attack = function(row, column) {
+      var key;
+      key = this.getKey(row, column);
+      if (!this.get('matrix')[key]) {
+        this.get('matrix')[key] = true;
+        this.set('latest', [row, column]);
+      }
+      this.trigger('addPosition', this);
+      return this.trigger('attackPlayer', this);
+    };
+
+    Board.prototype.addShip = function(row, column) {
+      var key;
+      key = this.getKey(row, column);
+      if (!this.get('matrix')[key]) {
+        this.get('matrix')[key] = true;
+        return this.trigger('addShip', this);
+      }
+    };
+
+    Board.prototype.checkForMatch = function(matrix) {
+      var matches;
+      matches = _.intersection(Object.keys(this.get('matrix')), Object.keys(matrix));
+      if (matches.length > this.get('matches')) {
+        this.set('matches', matches.length);
+        return this.trigger('hit', this);
+      }
+    };
+
+    Board.prototype.getKey = function(row, column) {
+      return '{"column":' + column + ',"row":' + row + '}';
+    };
+
+    Board.prototype.fillEnemyPosition = function() {
       var canAdd, column, count, direction, hasSpace, i, position, positions, row, shipLength, ships, _i, _j, _k, _l, _ref, _ref1, _ref2, _ref3;
       count = 0;
       ships = [2, 3, 3, 4, 5];
@@ -155,148 +294,6 @@ Board model controls the matrix
         }
       }
       return positions;
-    };
-
-    return App;
-
-  })(Backbone.Model);
-
-  AppView = (function(_super) {
-    __extends(AppView, _super);
-
-    function AppView() {
-      return AppView.__super__.constructor.apply(this, arguments);
-    }
-
-    AppView.prototype.className = 'gameContainer';
-
-    AppView.prototype.initialize = function() {
-      this.playerGuessView = new BoardView({
-        model: this.model.get('playerGuess')
-      });
-      this.enemyGuessView = new BoardView({
-        model: this.model.get('playerPosition')
-      });
-      this.model.get('playerGuess').on('addPosition', (function(_this) {
-        return function() {
-          var playerPositions;
-          playerPositions = _this.model.get('playerGuess').get('matrix');
-          return _this.model.get('enemyPosition').checkForMatch(playerPositions);
-        };
-      })(this));
-      this.model.get('playerGuess').on('attackPlayer', (function(_this) {
-        return function() {
-          var $item, column, key, player, playerMatrix, row;
-          row = Math.floor(Math.random() * 10) + 1;
-          column = Math.floor(Math.random() * 10) + 1;
-          player = _this.model.get('playerPosition');
-          playerMatrix = player.get('matrix');
-          key = _this.model.get('playerPosition').getKey(row, column);
-          if (playerMatrix[key]) {
-            player.set('points', player.get('points') + 1);
-            if (player.get('points') === 17) {
-              _this.gameOver();
-            }
-            $item = _this.getSquare(_this.enemyGuessView, row, column);
-            return $item.addClass('red');
-          }
-        };
-      })(this));
-      this.model.get('enemyPosition').on('hit', (function(_this) {
-        return function() {
-          var $item, column, enemy, row;
-          enemy = _this.model.get('enemyPosition');
-          enemy.set('points', enemy.get('points') + 1);
-          if (enemy.get('points') === 17) {
-            _this.gameOver();
-          }
-          row = _this.model.get('playerGuess').get('latest')[0];
-          column = _this.model.get('playerGuess').get('latest')[1];
-          $item = _this.getSquare(_this.playerGuessView, row, column);
-          return $item.addClass('green');
-        };
-      })(this));
-      this.model.get('playerPosition').on('addShip', (function(_this) {
-        return function() {
-          var count;
-          count = Object.keys(_this.model.get('playerPosition').get('matrix')).length;
-          if (count === 17) {
-            _this.model.get('playerPosition').set('setAllPieces', true);
-            return _this.model.get('playerGuess').set('setAllPieces', true);
-          }
-        };
-      })(this));
-      return this.render();
-    };
-
-    AppView.prototype.gameOver = function() {
-      debugger;
-      return alert('gameOver');
-    };
-
-    AppView.prototype.getSquare = function(view, row, column) {
-      return view.$el.find('table').find("tr:nth-child(" + row + ")").find("td:nth-child(" + column + ")");
-    };
-
-    AppView.prototype.render = function() {
-      return this.$el.append(this['playerGuessView'].render()).append(this['enemyGuessView'].render()).html();
-    };
-
-    return AppView;
-
-  })(Backbone.View);
-
-  Board = (function(_super) {
-    __extends(Board, _super);
-
-    function Board() {
-      return Board.__super__.constructor.apply(this, arguments);
-    }
-
-    Board.prototype.initialize = function(name, matrix) {
-      this.set('setAllPieces', false);
-      this.set('boardName', name);
-      this.set('matches', 0);
-      this.set('latest', null);
-      this.set('points', 0);
-      if (matrix) {
-        return this.set('matrix', matrix);
-      } else {
-        return this.set('matrix', {});
-      }
-    };
-
-    Board.prototype.attack = function(row, column) {
-      var key;
-      key = this.getKey(row, column);
-      if (!this.get('matrix')[key]) {
-        this.get('matrix')[key] = true;
-        this.set('latest', [row, column]);
-      }
-      this.trigger('addPosition', this);
-      return this.trigger('attackPlayer', this);
-    };
-
-    Board.prototype.addShip = function(row, column) {
-      var key;
-      key = this.getKey(row, column);
-      if (!this.get('matrix')[key]) {
-        this.get('matrix')[key] = true;
-        return this.trigger('addShip', this);
-      }
-    };
-
-    Board.prototype.checkForMatch = function(matrix) {
-      var matches;
-      matches = _.intersection(Object.keys(this.get('matrix')), Object.keys(matrix));
-      if (matches.length > this.get('matches')) {
-        this.set('matches', matches.length);
-        return this.trigger('hit', this);
-      }
-    };
-
-    Board.prototype.getKey = function(row, column) {
-      return '{"column":' + column + ',"row":' + row + '}';
     };
 
     return Board;
