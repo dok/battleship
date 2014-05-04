@@ -1,18 +1,18 @@
+###
+Author: Sean Dokko
+App model controls game logic
+App view event handlers triggers when game status changes
+
+Board model controls the matrix
+###
+
 class App extends Backbone.Model
   initialize: ->
-    # create player guess
-    @set('playerGuess', new Board('Enemy')) #1
-    # create enemy guess
+    @set('playerGuess', new Board('Enemy')) #First board
     @set('enemyGuess', new Board('Enemy Guess'))
-    # create enemy active
-    #   fill 17 positions in the 'matrix'
-
     randomPositions = do @fillEnemyPosition
     @set('enemyPosition', new Board('Enemy Position', randomPositions))
-
-    # create player active
-    # alert('fill up 17 spots in your board')
-    @set('playerPosition', new Board('You')) #2
+    @set('playerPosition', new Board('You')) #Second board
 
     return
 
@@ -20,8 +20,8 @@ class App extends Backbone.Model
     count = 0
     positions = {}
     while count < 17
-      x = Math.floor(Math.random() * 10)
-      y = Math.floor(Math.random() * 10)
+      x = Math.floor(Math.random() * 10) + 1
+      y = Math.floor(Math.random() * 10) + 1
       position =
         x: x
         y: y
@@ -46,15 +46,15 @@ class AppView extends Backbone.View
       row = Math.floor(Math.random() * 10) + 1
       column = Math.floor(Math.random() * 10) + 1
       playerMatrix = @model.get('playerPosition').get('matrix')
-      key = '{"x":' + column + ',"y":' + row + '}'
+      key = @model.get('playerPosition').getKey(x, y)
       if playerMatrix[key]
-        $item = @enemyGuessView.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
+        $item = @getSquare @enemyGuessView, row, column
         $item.addClass('red')
 
     @model.get('enemyPosition').on 'hit', =>
       row = @model.get('playerGuess').get('latest')[0]
       column = @model.get('playerGuess').get('latest')[1]
-      $item = @playerGuessView.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
+      $item = @getSquare @playerGuessView, row, column
       $item.addClass('green')
 
     @model.get('playerPosition').on 'addShip', =>
@@ -64,6 +64,9 @@ class AppView extends Backbone.View
         @model.get('playerGuess').set('setAllPieces', true)
 
     do @render
+
+  getSquare: (view, row, column) ->
+    view.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
 
   render: ->
     @$el
@@ -83,7 +86,7 @@ class Board extends Backbone.Model
       @set('matrix', {})
 
   attack: (row, column) ->
-    key = '{"x":' + column + ',"y":' + row + '}'
+    key = @getKey(row, column)
     if not @get('matrix')[key]
       @get('matrix')[key] = true
       @set('latest', [row, column])
@@ -91,7 +94,7 @@ class Board extends Backbone.Model
     @trigger 'attackPlayer', @
 
   addShip: (row, column) ->
-    key = '{"x":' + column + ',"y":' + row + '}'
+    key = @getKey(row, column)
     if not @get('matrix')[key]
       @get('matrix')[key] = true
       @trigger 'addShip', @
@@ -102,16 +105,17 @@ class Board extends Backbone.Model
       @set('matches', matches.length)
       @trigger 'hit', @
 
+  getKey: (row, column) ->
+    '{"x":' + column + ',"y":' + row + '}'
+
 class BoardView extends Backbone.View
   className: 'boardContainer'
 
   template: _.template($('#boardTemplate').html())
 
   initialize: ->
-    # do @render
 
   render: ->
-    # debugger;
     @$el.html(@template(@model.toJSON()))
 
   events:
