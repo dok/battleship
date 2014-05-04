@@ -50,7 +50,6 @@ class AppView extends Backbone.View
       if playerMatrix[key]
         $item = @enemyGuessView.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
         $item.addClass('red')
-        debugger;
 
     @model.get('enemyPosition').on 'hit', =>
       row = @model.get('playerGuess').get('latest')[0]
@@ -60,6 +59,9 @@ class AppView extends Backbone.View
 
     @model.get('playerPosition').on 'addShip', =>
       count = Object.keys(@model.get('playerPosition').get('matrix')).length
+      if count is 17
+        @model.get('playerPosition').set('setAllPieces', true)
+        @model.get('playerGuess').set('setAllPieces', true)
 
     do @render
 
@@ -71,6 +73,7 @@ class AppView extends Backbone.View
 
 class Board extends Backbone.Model
   initialize: (name, matrix) ->
+    @set('setAllPieces', false)
     @set('boardName', name)
     @set('matches', 0)
     @set('latest', null)
@@ -116,12 +119,17 @@ class BoardView extends Backbone.View
       rowIndex = $(e.currentTarget).parent().index() + 1
       columnIndex = $(e.currentTarget).index() + 1
       if(@model.get('boardName') is 'Enemy')
-        @model.attack(rowIndex, columnIndex)
-        $(e.currentTarget).toggleClass('black')
+        if @model.get('setAllPieces')
+          @model.attack(rowIndex, columnIndex)
+          $(e.currentTarget).toggleClass('black')
+        else
+          alert('you need to set all your pieces!')
       else
-        @model.addShip(rowIndex, columnIndex)
-        $(e.currentTarget).addClass('white')
-        # debugger;
+        if not @model.get('setAllPieces')
+          @model.addShip(rowIndex, columnIndex)
+          $(e.currentTarget).addClass('white')
+        else
+          alert("you've set all your pieces!")
 
 
 new AppView(model: new App()).$el.appendTo 'body'

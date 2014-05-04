@@ -75,8 +75,7 @@
           key = '{"x":' + column + ',"y":' + row + '}';
           if (playerMatrix[key]) {
             $item = _this.enemyGuessView.$el.find('table').find("tr:nth-child(" + row + ")").find("td:nth-child(" + column + ")");
-            $item.addClass('red');
-            debugger;
+            return $item.addClass('red');
           }
         };
       })(this));
@@ -92,7 +91,11 @@
       this.model.get('playerPosition').on('addShip', (function(_this) {
         return function() {
           var count;
-          return count = Object.keys(_this.model.get('playerPosition').get('matrix')).length;
+          count = Object.keys(_this.model.get('playerPosition').get('matrix')).length;
+          if (count === 17) {
+            _this.model.get('playerPosition').set('setAllPieces', true);
+            return _this.model.get('playerGuess').set('setAllPieces', true);
+          }
         };
       })(this));
       return this.render();
@@ -114,6 +117,7 @@
     }
 
     Board.prototype.initialize = function(name, matrix) {
+      this.set('setAllPieces', false);
       this.set('boardName', name);
       this.set('matches', 0);
       this.set('latest', null);
@@ -180,11 +184,19 @@
         rowIndex = $(e.currentTarget).parent().index() + 1;
         columnIndex = $(e.currentTarget).index() + 1;
         if (this.model.get('boardName') === 'Enemy') {
-          this.model.attack(rowIndex, columnIndex);
-          return $(e.currentTarget).toggleClass('black');
+          if (this.model.get('setAllPieces')) {
+            this.model.attack(rowIndex, columnIndex);
+            return $(e.currentTarget).toggleClass('black');
+          } else {
+            return alert('you need to set all your pieces!');
+          }
         } else {
-          this.model.addShip(rowIndex, columnIndex);
-          return $(e.currentTarget).addClass('white');
+          if (!this.model.get('setAllPieces')) {
+            this.model.addShip(rowIndex, columnIndex);
+            return $(e.currentTarget).addClass('white');
+          } else {
+            return alert("you've set all your pieces!");
+          }
         }
       }
     };
