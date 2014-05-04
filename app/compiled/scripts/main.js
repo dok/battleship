@@ -43,6 +43,55 @@
 
   })(Backbone.Model);
 
+  AppView = (function(_super) {
+    __extends(AppView, _super);
+
+    function AppView() {
+      return AppView.__super__.constructor.apply(this, arguments);
+    }
+
+    AppView.prototype.className = 'gameContainer';
+
+    AppView.prototype.initialize = function() {
+      this.playerGuessView = new BoardView({
+        model: this.model.get('playerGuess')
+      });
+      this.enemyGuessView = new BoardView({
+        model: this.model.get('playerPosition')
+      });
+      this.model.get('playerGuess').on('addPosition', (function(_this) {
+        return function() {
+          var playerPositions;
+          playerPositions = _this.model.get('playerGuess').get('matrix');
+          return _this.model.get('enemyPosition').checkForMatch(playerPositions);
+        };
+      })(this));
+      this.model.get('enemyPosition').on('hit', (function(_this) {
+        return function() {
+          var $item, column, row;
+          row = _this.model.get('playerGuess').get('latest')[0] + 1;
+          column = _this.model.get('playerGuess').get('latest')[1] + 1;
+          $item = _this.playerGuessView.$el.find('table').find("tr:nth-child(" + row + ")").find("td:nth-child(" + column + ")");
+          return $item.addClass('green');
+        };
+      })(this));
+      this.model.get('playerPosition').on('addShip', (function(_this) {
+        return function() {
+          var count;
+          return count = _this.model.get('playerPosition').get('matrix').length;
+        };
+      })(this));
+      return this.render();
+    };
+
+    AppView.prototype.render = function() {
+      return this.$el.append(this['playerGuessView'].render()).append(this['enemyGuessView'].render()).html();
+    };
+
+    return AppView;
+
+  })(Backbone.View);
+
   Board = (function(_super) {
     __extends(Board, _super);
 
@@ -61,7 +110,7 @@
       }
     };
 
-    Board.prototype.addPosition = function(row, column) {
+    Board.prototype.attack = function(row, column) {
       var key;
       key = '{"x":' + column + ',"y":' + row + '}';
       if (!this.get('matrix')[key]) {
@@ -69,6 +118,15 @@
         this.set('latest', [row, column]);
       }
       return this.trigger('addPosition', this);
+    };
+
+    Board.prototype.addShip = function(row, column) {
+      var key;
+      key = '{"x":' + column + ',"y":' + row + '}';
+      if (!this.get('matrix')[key]) {
+        this.get('matrix')[key] = true;
+        return this.trigger('addShip', this);
+      }
     };
 
     Board.prototype.checkForMatch = function(matrix) {
@@ -106,55 +164,17 @@
         var columnIndex, rowIndex;
         rowIndex = $(e.currentTarget).parent().index();
         columnIndex = $(e.currentTarget).index();
-        this.model.addPosition(rowIndex, columnIndex);
-        return $(e.currentTarget).toggleClass('black');
+        if (this.model.get('boardName') === 'Enemy') {
+          this.model.attack(rowIndex, columnIndex);
+          return $(e.currentTarget).toggleClass('black');
+        } else {
+          this.model.addShip(rowIndex, columnIndex);
+          return $(e.currentTarget).toggleClass('white');
+        }
       }
     };
 
     return BoardView;
-
-  })(Backbone.View);
-
-  AppView = (function(_super) {
-    __extends(AppView, _super);
-
-    function AppView() {
-      return AppView.__super__.constructor.apply(this, arguments);
-    }
-
-    AppView.prototype.className = 'gameContainer';
-
-    AppView.prototype.initialize = function() {
-      this.playerGuessView = new BoardView({
-        model: this.model.get('playerGuess')
-      });
-      this.enemyGuessView = new BoardView({
-        model: this.model.get('playerPosition')
-      });
-      this.model.get('playerGuess').on('addPosition', (function(_this) {
-        return function() {
-          var playerPositions;
-          playerPositions = _this.model.get('playerGuess').get('matrix');
-          return _this.model.get('enemyPosition').checkForMatch(playerPositions);
-        };
-      })(this));
-      this.model.get('enemyPosition').on('hit', (function(_this) {
-        return function() {
-          var $item, column, row;
-          row = _this.model.get('playerGuess').get('latest')[0] + 1;
-          column = _this.model.get('playerGuess').get('latest')[1] + 1;
-          $item = _this.playerGuessView.$el.find('table').find("tr:nth-child(" + row + ")").find("td:nth-child(" + column + ")");
-          return $item.addClass('green');
-        };
-      })(this));
-      return this.render();
-    };
-
-    AppView.prototype.render = function() {
-      return this.$el.append(this['playerGuessView'].render()).append(this['enemyGuessView'].render()).html();
-    };
-
-    return AppView;
 
   })(Backbone.View);
 

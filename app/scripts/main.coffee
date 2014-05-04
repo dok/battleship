@@ -30,6 +30,35 @@ class App extends Backbone.Model
         count++
     positions
 
+class AppView extends Backbone.View
+  className: 'gameContainer'
+
+  initialize: ->
+    # console.log(@model.get('playerGuess'))
+    @playerGuessView = new BoardView(model: @model.get('playerGuess'))
+    @enemyGuessView = new BoardView(model: @model.get('playerPosition'))
+
+    @model.get('playerGuess').on 'addPosition', =>
+      playerPositions = @model.get('playerGuess').get('matrix')
+      @model.get('enemyPosition').checkForMatch(playerPositions)
+
+    @model.get('enemyPosition').on 'hit', =>
+      row = @model.get('playerGuess').get('latest')[0] + 1
+      column = @model.get('playerGuess').get('latest')[1] + 1
+      $item = @playerGuessView.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
+      $item.addClass('green')
+
+    @model.get('playerPosition').on 'addShip', =>
+      count = @model.get('playerPosition').get('matrix').length
+
+    do @render
+
+  render: ->
+    @$el
+      .append @['playerGuessView'].render()
+      .append @['enemyGuessView'].render()
+      .html()
+
 class Board extends Backbone.Model
   initialize: (name, matrix) ->
     @set('boardName', name)
@@ -40,12 +69,19 @@ class Board extends Backbone.Model
     else
       @set('matrix', {})
 
-  addPosition: (row, column) ->
+  attack: (row, column) ->
     key = '{"x":' + column + ',"y":' + row + '}'
     if not @get('matrix')[key]
       @get('matrix')[key] = true
       @set('latest', [row, column])
     @trigger 'addPosition', @
+
+  addShip: (row, column) ->
+    key = '{"x":' + column + ',"y":' + row + '}'
+    if not @get('matrix')[key]
+      @get('matrix')[key] = true
+      # @set('shipCount', @get('shipCount') + 1)
+      @trigger 'addShip', @
 
   checkForMatch: (matrix) ->
     matches = _.intersection( Object.keys(@get('matrix')), Object.keys(matrix) )
@@ -69,34 +105,13 @@ class BoardView extends Backbone.View
     'click td': (e) ->
       rowIndex = $(e.currentTarget).parent().index()
       columnIndex = $(e.currentTarget).index()
-      @model.addPosition(rowIndex, columnIndex)
-      $(e.currentTarget).toggleClass('black')
-
-class AppView extends Backbone.View
-  className: 'gameContainer'
-
-  initialize: ->
-    # console.log(@model.get('playerGuess'))
-    @playerGuessView = new BoardView(model: @model.get('playerGuess'))
-    @enemyGuessView = new BoardView(model: @model.get('playerPosition'))
-
-    @model.get('playerGuess').on 'addPosition', =>
-      playerPositions = @model.get('playerGuess').get('matrix')
-      @model.get('enemyPosition').checkForMatch(playerPositions)
-
-    @model.get('enemyPosition').on 'hit', =>
-      row = @model.get('playerGuess').get('latest')[0] + 1
-      column = @model.get('playerGuess').get('latest')[1] + 1
-      $item = @playerGuessView.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
-      $item.addClass('green')
-
-    do @render
-
-  render: ->
-    @$el
-      .append @['playerGuessView'].render()
-      .append @['enemyGuessView'].render()
-      .html()
+      if(@model.get('boardName') is 'Enemy')
+        @model.attack(rowIndex, columnIndex)
+        $(e.currentTarget).toggleClass('black')
+      else
+        @model.addShip(rowIndex, columnIndex)
+        $(e.currentTarget).toggleClass('white')
+        # debugger;
 
 
 new AppView(model: new App()).$el.appendTo 'body'
