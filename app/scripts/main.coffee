@@ -1,18 +1,18 @@
 class App extends Backbone.Model
   initialize: ->
     # create player guess
-    @set('playerGuess', {})
+    @set('playerGuess', new Board('Enemy')) #1
     # create enemy guess
-    @set('enemyGuess', {})
+    @set('enemyGuess', new Board('Enemy Guess'))
     # create enemy active
     #   fill 17 positions in the 'matrix'
 
-    @set('enemyPosition', @fillEnemyPosition())
-    console.log(@get('enemyPosition'))
+    randomPositions = do @fillEnemyPosition
+    @set('enemyPosition', new Board('Enemy Position', randomPositions))
 
     # create player active
     # alert('fill up 17 spots in your board')
-    @set('playerPosition', {})
+    @set('playerPosition', new Board('You')) #2
 
     return
 
@@ -30,21 +30,47 @@ class App extends Backbone.Model
         count++
     positions
 
+class Board extends Backbone.Model
+  initialize: (name, matrix) ->
+    @set('boardName', name)
+    @set('matches', 0)
+    @set('latest', null)
+    if matrix
+      @set('matrix', matrix)
+    else
+      @set('matrix', {})
+
+  addPosition: (row, column) ->
+    key = '{"x":' + column + ',"y":' + row + '}'
+    if not @get('matrix')[key]
+      @get('matrix')[key] = true
+      @set('latest', [row, column])
+    @trigger 'addPosition', @
+
+  checkForMatch: (matrix) ->
+    matches = _.intersection( Object.keys(@get('matrix')), Object.keys(matrix) )
+    if matches.length > @get('matches')
+      @set('matches', matches.length)
+      @trigger 'hit', @
+
 class BoardView extends Backbone.View
+  className: 'boardContainer'
+
   template: _.template($('#boardTemplate').html())
 
   initialize: ->
     # do @render
 
   render: ->
-    @$el.html(@template())
+    # debugger;
+    @$el.html(@template(@model.toJSON()))
 
   events:
     'click td': (e) ->
       rowIndex = $(e.currentTarget).parent().index()
       columnIndex = $(e.currentTarget).index()
-      $(e.currentTarget).toggleClass('red')
-      # positionOnBoard = $('pla')
+      @model.addPosition(rowIndex, columnIndex)
+      $(e.currentTarget).toggleClass('black')
 
 class AppView extends Backbone.View
   className: 'gameContainer'
@@ -52,7 +78,18 @@ class AppView extends Backbone.View
   initialize: ->
     # console.log(@model.get('playerGuess'))
     @playerGuessView = new BoardView(model: @model.get('playerGuess'))
-    @enemyGuessView = new BoardView(model: @model.get('enemyGuess'))
+    @enemyGuessView = new BoardView(model: @model.get('playerPosition'))
+
+    @model.get('playerGuess').on 'addPosition', =>
+      playerPositions = @model.get('playerGuess').get('matrix')
+      @model.get('enemyPosition').checkForMatch(playerPositions)
+
+    @model.get('enemyPosition').on 'hit', =>
+      row = @model.get('playerGuess').get('latest')[0] + 1
+      column = @model.get('playerGuess').get('latest')[1] + 1
+      $item = @playerGuessView.$el.find('table').find("tr:nth-child(#{row})").find("td:nth-child(#{column})")
+      $item.addClass('green')
+
     do @render
 
   render: ->
